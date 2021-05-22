@@ -21,6 +21,5 @@ Run conda install -c conda-forge jupyter jupyterlab && \
 
 WORKDIR /
 CMD ["jupyter", "lab", "--ip=0.0.0.0", "--allow-root", "--LabApp.token=''"]
-# CMD ["/bin/bash"]
 # docker run -p 8888:8888 -v ~/Desktop/python/for_volume:/work --name pymc36 ID
 
