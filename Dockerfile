@@ -19,6 +19,7 @@ ENV PATH /opt/Miniconda3/bin:$PATH
 Run conda install -c conda-forge jupyter jupyterlab && \
 	conda install -c conda-forge numpy==1.15.4 matplotlib==3.02 pandas==0.23.4 \
 	scipy==1.1.0 seaborn==0.9.0 pymc3==3.6 
+Run conda install -c conda-forge scikit-learn statsmodels
 
 WORKDIR /
 # CMD ["bash"]
