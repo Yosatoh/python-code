@@ -294,14 +294,15 @@ class CalcLoan(object):
 
                 if print_show:
                     self._print_results(timer=timer)
-                print(f"total_repayment: {sum(self._repayment_list):,} yen")
-                try:
-                    # Don't show return of deduction in the case of not using function "set_deduction~"
-                    self._max_return
-                    print(f"total_return_of_deduction_housing_loan: {sum(self._return_deduction_list):,} yen")
-                    print(f"total_repayment - return: {(sum(self._repayment_list) - sum(self._return_deduction_list)):,} yen")
-                except AttributeError:
-                    pass
+                    print(f"total_repayment: {sum(self._repayment_list):,} yen")
+                    try:
+                        # Don't show return of deduction in the case of not using function "set_deduction~"
+                        self._max_return
+                        print(f"total_return_of_deduction_housing_loan: {sum(self._return_deduction_list):,} yen")
+                        print(f"total_repayment - return: {(sum(self._repayment_list) - sum(self._return_deduction_list)):,} yen")
+                        print()
+                    except AttributeError:
+                        pass
                 break
             else:                
                 loan_balance -= repayment - interest
