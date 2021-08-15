@@ -87,9 +87,7 @@ class CalcLoan(object):
                                         + (self.initial_month - graduate_date[1]) / 12
                         update_rate =  rates[i]
                         update_repayment = self.calc_repay(repay_period, update_rate, loan_balance)
-                        self._for_gradual_rate.append([update_rate, update_repayment, graduate_date, change_years[i]])
-
-        
+                        self._for_gradual_rate.append([update_rate, update_repayment, graduate_date, change_years[i]])     
 
     def set_advanced_payment(self, amounts, dates, methods=None):
         """
@@ -115,6 +113,32 @@ class CalcLoan(object):
         self._prepay_amount_list = amounts
         self._prepay_date_list = dates
         self._prepay_method_list = methods
+
+    def set_deduction_housing_loan(self, building_price, max_return=500_000):
+        
+        self._building_price = building_price
+        self._max_return = max_return
+
+    def _calc_deduction_housing_loan(self, ):
+        
+        try:
+            building_price = self._building_price
+            max_return = self._max_return
+            loan_balance = self._loan_balances[-1]
+        except AttributeError:
+            return None
+
+        if self._date_pointer[0] - self.initial_year + 1 <= 10:
+            return_deduction = max_return if loan_balance * 0.01 >= max_return else loan_balance * 0.01
+        elif self._date_pointer[0] - self.initial_year + 1 <= 13:
+            if loan_balance * 0.01 >= building_price * 0.02 / 3:
+                return_deduction = building_price * 0.02 / 3
+            else:
+                return_deduction = loan_balance * 0.01
+        else:
+            return None
+
+        self._return_deduction_list.append(int(return_deduction))
 
     def calc_repay(self, repay_period, rate, loan_balance=None):
 
@@ -184,9 +208,6 @@ class CalcLoan(object):
                 return update_rate, update_repayment
         return rate, repayment
 
-    def deduction_housing_loan(self):
-        pass
-
     def _initialize_for_calculate(self):
 
         try:
@@ -203,6 +224,11 @@ class CalcLoan(object):
             self.interest_list
         except AttributeError:
             self.interest_list = [0]
+
+        try:
+            self._return_deduction_list
+        except AttributeError:
+            self._return_deduction_list = []
 
         self.temp_prepayment = 0
 
@@ -269,6 +295,13 @@ class CalcLoan(object):
                 if print_show:
                     self._print_results(timer=timer)
                 print(f"total_repayment: {sum(self._repayment_list):,} yen")
+                try:
+                    # Don't show return of deduction in the case of not using function "set_deduction~"
+                    self._max_return
+                    print(f"total_return_of_deduction_housing_loan: {sum(self._return_deduction_list):,} yen")
+                    print(f"total_repayment - return: {(sum(self._repayment_list) - sum(self._return_deduction_list)):,} yen")
+                except AttributeError:
+                    pass
                 break
             else:                
                 loan_balance -= repayment - interest
@@ -287,3 +320,7 @@ class CalcLoan(object):
                     self.repayment = repayment
                 except AttributeError:
                     pass
+
+                # calculate deduction_housing_loan
+                if self._date_pointer[1] == 12:
+                    self._calc_deduction_housing_loan()
