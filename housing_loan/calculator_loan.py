@@ -10,6 +10,8 @@ class CalcLoan(object):
     def __init__(self, initial_debt):
         
         self._loan_balances = [initial_debt]
+        # for calculating of gradual rate in function(set_gradual_rate)
+        self.loan_balance = initial_debt
 
     def set_initial(self, repay_period, initial_rate, initial_year=None, initial_month=None):
         """
@@ -34,16 +36,18 @@ class CalcLoan(object):
 
         self.repayment = self.calc_repay(repay_period, initial_rate)
 
-    def set_gradual_rate(self, rates, change_years):
-        
-        # TODO: create Error
+    def set_gradual_rate(self, rates, change_years, date_pointer=None):
+
+        if date_pointer is None:
+            date_pointer = self._date_pointer
+
         if isinstance(rates, int) or isinstance(rates, float):
             rates = [rates]
         if isinstance(change_years, int) or isinstance(change_years,float):
             change_years = [change_years]
         if len(rates) != len(change_years):
             raise Exception("The length of the rate list should be same as change_years")
-
+                
         # Initializaion
         self._for_gradual_rate = []
         change_date_list = []
@@ -54,14 +58,13 @@ class CalcLoan(object):
                 raise ValueError("change_years should be equal and larger than 1")
             else:
                 change_year += self.initial_year
-            # self._change_date_list.append([change_year, self.initial_month])
             change_date_list.append([change_year, self.initial_month])
 
         # Initialization for calculate repayment amount.
         rate = self.rate
         repayment = self.repayment
-        temporary_date_pointer = self._date_pointer.copy() 
-        loan_balance = self._loan_balances[-1]
+        temporary_date_pointer = date_pointer.copy()
+        loan_balance = self.loan_balance
 
         while True:
             # Update temporary_date_pointer
@@ -69,8 +72,11 @@ class CalcLoan(object):
 
             # calculate loan_balance
             interest = int(loan_balance * (rate * 0.01 / 12))
-            if loan_balance < repayment:
+            if loan_balance < repayment:                
                 self._for_gradual_rate = [list(x) for x in zip(*self._for_gradual_rate)]
+
+                if self._for_gradual_rate == []:
+                    del self._for_gradual_rate
                 break
             else:                
                 loan_balance -= repayment - interest
@@ -81,7 +87,7 @@ class CalcLoan(object):
                                         + (self.initial_month - graduate_date[1]) / 12
                         update_rate =  rates[i]
                         update_repayment = self.calc_repay(repay_period, update_rate, loan_balance)
-                        self._for_gradual_rate.append([update_rate, update_repayment, graduate_date])
+                        self._for_gradual_rate.append([update_rate, update_repayment, graduate_date, change_years[i]])
 
         
 
@@ -106,11 +112,6 @@ class CalcLoan(object):
         if not isinstance(dates[0], list):
             dates = [dates]
 
-        try:
-            self._change_repayment_list
-        except AttributeError:
-            self._change_repayment_list = []
-
         self._prepay_amount_list = amounts
         self._prepay_date_list = dates
         self._prepay_method_list = methods
@@ -125,23 +126,39 @@ class CalcLoan(object):
                        ((1 + month_rate) ** (repay_period*12) -1)
         return int(repayment)
 
-    def _calc_prepay(self, loan_balance, rate, repayment):
+    def _calc_prepay(self, loan_balance, rate, repayment, date_pointer=None):
 
-        # self.temp_prepayment
+        if date_pointer is None:
+            date_pointer = self._date_pointer
 
-        calculate_date = [self._date_pointer[0], self._date_pointer[1]]
+        calculate_date = [date_pointer[0], date_pointer[1]]
         for i, prepayment_date in enumerate(self._prepay_date_list):
             if calculate_date == prepayment_date:
                 loan_balance -= self._prepay_amount_list[i]
+                self.loan_balance = loan_balance
                 self.temp_prepayment = self._prepay_amount_list[i]
                 if self._prepay_method_list[i] == "shorten":
                     self.temp_prepayment = self._prepay_amount_list[i]
                     return loan_balance, rate, repayment
                 elif self._prepay_method_list[i] == "reduce":
+                    # rewrite "prepayment_date" for calculate self._for_guradual_rate
+                    if prepayment_date[1] != 1:
+                        prepayment_date[1] -= 1
+                    else:
+                        prepayment_date[0] -= 1
+                        prepayment_date[1] = 12                    
+
                     repay_period = self.repay_period \
                                     + (self.initial_year - prepayment_date[0]) \
                                     + (self.initial_month - prepayment_date[1]) / 12
-                    update_repayment = self.calc_repay(repay_period, rate)
+                    update_repayment = self.calc_repay(repay_period, rate, loan_balance)
+                    self.repayment = update_repayment
+                    try:
+                        rates = self._for_gradual_rate[0]
+                        change_years = self._for_gradual_rate[3]
+                        self.set_gradual_rate(rates, change_years, prepayment_date)
+                    except AttributeError:
+                        pass
                     return loan_balance, rate, update_repayment
                 else:
                     raise Exception('the method of self.set_advanced_payment should be "shorten" or "reduce".')
@@ -164,7 +181,6 @@ class CalcLoan(object):
                                 + (self.initial_month - graduate_date[1]) / 12
                 update_rate =  rate_list[i]
                 update_repayment = repayment_list[i]
-                self._change_repayment_list.append(update_repayment)
                 return update_rate, update_repayment
         return rate, repayment
 
@@ -236,6 +252,7 @@ class CalcLoan(object):
             self.date_list.append(datetime(self._date_pointer[0], self._date_pointer[1], 10))
 
             # calculate of prepayment
+            # Assumed that the repayment will be advanced before the repayment of this month.
             try:
                 loan_balance, rate, repayment = self._calc_prepay(loan_balance, rate, repayment)
             except AttributeError:
@@ -266,5 +283,7 @@ class CalcLoan(object):
                 # Update rate & repayment amount
                 try:
                     rate, repayment = self._calc_rate_repayment(rate, repayment)
+                    self.rate = rate
+                    self.repayment = repayment
                 except AttributeError:
                     pass
