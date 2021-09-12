@@ -8,3 +8,4 @@ housing_loan/__pycache__/
 *.db
 cheat_sheet/
 TRAINING_SQL.txt
+.SQL
