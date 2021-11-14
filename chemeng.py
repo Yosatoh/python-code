@@ -19,13 +19,18 @@ class Antoine(object):
             self.comp_dict = comp_list
         elif isinstance(comp_list, dict):
             temp_comp_list = []
-            for comp in comp_list.keys():
+            temp_value_list = []
+            for comp, value in comp_list.items():
                 temp_comp_list.append(comp)
-            self.components = temp_list
-            
-            for comp in comp_list.keys():
-                
-            self.comp_dict = comp_list
+                temp_value_list.append(value)
+            self.components = temp_comp_list.copy()
+            temp_arr = np.array(temp_value_list)
+            total = temp_arr.sum()
+            temp_value_list = (temp_arr/total).tolist()
+            comp_dict = {}
+            for i, comp in enumerate(temp_comp_list):
+                comp_dict[comp] = temp_value_list[i]
+            self.comp_dict = comp_dict
         elif isinstance(comp_list, list):
             self.components = comp_list
         else:
@@ -89,7 +94,7 @@ class Antoine(object):
             
         # TODO: if isinstace is not good.
         if isinstance(comp_dict, dict):
-            
+            pass
         
         P = {}
         for comp in self.components:
