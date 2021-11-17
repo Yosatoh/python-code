@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import scipy
 
 
 class CoefBank(object):
@@ -11,13 +12,12 @@ class CoefBank(object):
     
 class Antoine(object):
     
-    def __init__(self, comp_list=None):
+    def __init__(self, comp_list=None, param_file=None):
         
         self.comp_dict = None
-        
-        if comp_list is None:
-            self.comp_dict = comp_list
-        elif isinstance(comp_list, dict):
+        self._calc_flag = False
+
+        if isinstance(comp_list, dict):
             temp_comp_list = []
             temp_value_list = []
             for comp, value in comp_list.items():
@@ -36,13 +36,25 @@ class Antoine(object):
         else:
             raise Exception("the type of comp_list is list or dictionary") 
 
-        self.databank = {
-            'aceton': (7.29958, 1312.25, 240.705),
-            'methanol' : (8.07919, 1583.34, 239.650),
-            'water' : (8.02754, 1705.62, 231.405),
-        }
-        self._calc_flag = False
-        
+        if param_file is None:
+            self.databank = {
+                'aceton': (7.29958, 1312.25, 240.705),
+                'methanol' : (8.07919, 1583.34, 239.650),
+                'ethanol': (8.12187, 1598.673, 226.726),
+                'hexane':(6.89122, 1178.802, 225.200),
+                'heptane': (6.89798, 1265.235, 216.533),
+                'benzene': (7.60093, 1660.652, 271.689),
+                'toluene': (6.96554, 1351.272, 220.191),
+                'methyl ethyl ketone': (6.86450, 1150.207, 209.246),
+                'water' : (8.02754, 1705.62, 231.405),
+            }
+        else:
+            df = pd.read_csv('antoine_params.csv', header=0)
+            temp_dict = {}
+            for v in df.itertuples():
+                temp_dict[v[1]] = v[2]
+            self.databank = temp_dict
+    
     def equation(self):
         print(r'$\log{P} = A - \frac{B}{t+C}$ </br> t:温度[degree],P:蒸気圧[mmHg]')
 
@@ -89,20 +101,17 @@ class Antoine(object):
         if self._calc_flag == False:
              self.create_antoine_params()
         
-        if init_comp_using == True and self.comp_dict is not None:
+        if init_comp_using == True:
             comp_dict = self.comp_dict
-            
-        # TODO: if isinstace is not good.
-        if isinstance(comp_dict, dict):
-            pass
+            comp_list = self.components
         
         P = {}
         for comp in self.components:
             A, B, C = self.antoine_dict[comp]
-            if components_list is None:
+            if comp_dict is None:
                 P[comp] = 10**(A - B/(temp+C))
             else:
-                p[comp] = 10**(A - B/(temp+C)) * comp_dict[comp]
+                P[comp] = 10**(A - B/(temp+C)) * comp_dict[comp]
             
         if show == True:
             print(f"Vapor pressure at {temp} degree C")
@@ -112,17 +121,38 @@ class Antoine(object):
             
         return P
     
-#     def calc_temperature(self, pressure=760, temp=50, iteration=1000, error = 1e-5, epsilon=0.001):
+    def calc_temperature(self, pressure=760, temp=50, iteration=1000, error = 0.05, epsilon=0.0001, comp_dict=None, init_comp_using=True):
         
-#         if self._calc_flag == False:
-#             self.create_antoine_params()
+        if self._calc_flag == False:
+            self.create_antoine_params()        
+        
+        n = 0
+        while n < iteration:
+            n += 1
+            P = self.calc_pressure(temp=temp, comp_dict=comp_dict, init_comp_using=init_comp_using)
+            solution = sum(P.values())
+            if abs(solution - pressure) < error:
+                return temp
+            else:
+                P = self.calc_pressure(temp=temp+epsilon, comp_dict=comp_dict, init_comp_using=init_comp_using)
+                P_plus = sum(P.values())
+                
+                P = self.calc_pressure(temp=temp-epsilon, comp_dict=comp_dict, init_comp_using=init_comp_using)
+                P_minus = sum(P.values())
+                diff = (P_plus - P_minus) / (2*epsilon)
+                temp -= (solution - pressure) / diff
+
+        raise Exception("Can't solve this problem")
+    
+    def data_to_csv(self, filename):
+        
+        labels = ['component', 'params']
+        with open(filename, 'w') as f:
+            writer = csv.DictWriter(f, fieldnames=labels)
+            writer.writeheader()
+            for k, v in self.databank.items():
+                writer.writerow({'component': k, 'params': v})
             
-#         n = 0
-#         while n < iteration:
-#             n += 1
-#             P = self.calc_pressure(temp=temp)
-#             for i in range(len(P)):
-#                 P
             
                 
 class Wilson(object):
