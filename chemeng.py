@@ -223,8 +223,16 @@ class Wilson(object):
         area_B = np.log(divide_r1_by_r2[np.log(divide_r1_by_r2) < 0]).sum()
         divide_A_by_B = area_A / (-1*area_B)
         
+        I = np.sum(np.log(divide_r1_by_r2))
+        D = 100 * I / (np.abs(area_A) + np.abs(area_B))
+        
+        ## for debag
+        # print(f'I = {I:.3f}')
+        # print(f'area_A = {area_A:.3f}')
+        # print(f'area_B = {area_B:.3f}')
+
         if graph == False:
-            print(f'area A/B = {divide_A_by_B:.3f}')
+            print(f'D = {D:.3f}')
         elif graph == True:
             fig, ax = plt.subplots(1,2, figsize=(12, 4.5), sharex=True)
             ax[0].plot(x1_array, r1_list, c='blue', label='r1')
@@ -243,7 +251,7 @@ class Wilson(object):
             ax[1].set_title('x1 vs. ln(r1/r2)')
             ax[1].grid(alpha=0.5)
             
-            fig.text(0.8, 0.9, f'area A/B = {divide_A_by_B:.3f}', size=15, color='indianred')
+            fig.text(0.8, 0.9, f'D = {D:.3f}', size=15, color='indianred')
 
             plt.show()
         
