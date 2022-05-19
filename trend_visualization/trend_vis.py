@@ -3,7 +3,7 @@ from  datetime import datetime
 
 import matplotlib.pyplot as plt
 from matplotlib import cm, dates, ticker
-
+from matplotlib.backends.backend_pdf import PdfPages
 
 def trend_vis(df, plot_list=None, fig_save_name=None, legend_loc="lower right", 
               graph_width=12.0, graph_height=3.0, x_min=None, x_max=None,
@@ -90,7 +90,7 @@ def trend_vis(df, plot_list=None, fig_save_name=None, legend_loc="lower right",
             cbar = fig.colorbar(mappable, ax = ax[idx])
             cbar.set_label(colorbar_column)
         else:
-            ax[idx].plot(df.index, df[column], color=cm.tab10.colors[idx], 
+            ax[idx].plot(df.index, df[column], color=cm.tab10.colors[idx%10], 
                          label=column)
             ax[idx].legend(loc=legend_loc)
 
