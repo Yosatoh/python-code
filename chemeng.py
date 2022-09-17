@@ -235,21 +235,24 @@ class Wilson(object):
             print(f'D = {D:.3f}')
         elif graph == True:
             fig, ax = plt.subplots(1,2, figsize=(12, 4.5), sharex=True)
-            ax[0].plot(x1_array, r1_list, c='blue', label='r1')
-            ax[0].plot(x1_array, r2_list, c='indianred', label='r2')
-            ax[0].axvline(x=0.5, color='black', ls='--', lw=1, alpha=0.3)
-            ax[0].set_xlabel('x1')
-            ax[0].set_ylabel('r1, r2')
-            ax[0].set_title('x1 vs. r1/r2', size=16)
-            ax[0].grid(alpha=0.5)
-            ax[0].legend(loc='best')
 
-            ax[1].plot(x1_array, np.log(divide_r1_by_r2))
-            ax[1].axhline(y=0, color='black', lw=1)
-            ax[1].set_xlabel('x1')
-            ax[1].set_ylabel('ln(r1/r2)')
-            ax[1].set_title('x1 vs. ln(r1/r2)')
-            ax[1].grid(alpha=0.5)
+            i = 0
+            ax[i].plot(x1_array, r1_list, c='blue', label='r1')
+            ax[i].plot(x1_array, r2_list, c='indianred', label='r2')
+            ax[i].axvline(x=0.5, color='black', ls='--', lw=1, alpha=0.3)
+            ax[i].set_xlabel('x1')
+            ax[i].set_ylabel('r1, r2')
+            ax[i].set_title('x1 vs. r1/r2', size=16)
+            ax[i].grid(alpha=0.5)
+            ax[i].legend(loc='best')
+
+            i = 1
+            ax[i].plot(x1_array, np.log(divide_r1_by_r2))
+            ax[i].axhline(y=0, color='black', lw=1)
+            ax[i].set_xlabel('x1')
+            ax[i].set_ylabel('ln(r1/r2)')
+            ax[i].set_title('x1 vs. ln(r1/r2)')
+            ax[i].grid(alpha=0.5)
             
             fig.text(0.8, 0.9, f'D = {D:.3f}', size=15, color='indianred')
 
