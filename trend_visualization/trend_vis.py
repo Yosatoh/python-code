@@ -49,7 +49,6 @@ def trend_vis(df, plot_list=None, fig_save_name=None, legend_loc="lower right",
         * mpl.dates.DateFormatter("%m/%d %H:%M")
         * mpl.dates.DateFormatter("%y/%m/%d")
     
-    
     Returns
     ----------
     None
@@ -65,68 +64,78 @@ def trend_vis(df, plot_list=None, fig_save_name=None, legend_loc="lower right",
                            fig_save_name="sample.png")
     
     """
+    def _trend_vis(_column, _ax, _idx=1):
+        if colorbar_column is not None:
+            mappable = _ax.scatter(df.index, df[_column], s=4, label=column,
+                                  c=df[colorbar_column], cmap="coolwarm")
+            cbar = fig.colorbar(mappable, ax = _ax)
+            cbar.set_label(colorbar_column)
+        else:
+            _ax.plot(df.index, df[column], color=cm.tab10.colors[_idx%10], 
+                         label=column)
+            _ax.legend(loc=legend_loc)
+
+        # 垂線
+        for ver in ver_line_list:
+            _ax.axvline(x=ver, color='indianred')
+
+        # trend表示範囲の設定
+        _ax.set_xlim(x_min, x_max)
+
+        # x軸の設定
+        _ax.tick_params(axis="x", rotation=60)  # 要望があれば、rotationも変数に格納
+        if x_major_loc is not None:
+            if type(x_major_loc) == np.ndarray:
+                _ax.xaxis.set_major_locator(ticker.FixedLocator(x_major_loc))
+            else:
+                _ax.xaxis.set_major_locator(x_major_loc)
+
+        if x_major_format is not None:
+            _ax.xaxis.set_major_formatter(x_major_format)
+        _ax.grid(alpha=0.75, linewidth=1.5)
+
+        if x_minor_loc is not None:
+            if type(x_minor_loc) == np.ndarray:
+                _ax.xaxis.set_minor_locator(ticker.FixedLocator(x_minor_loc))
+            else:
+                _ax.xaxis.set_minor_locator(x_minor_loc)
+            _ax.grid(alpha=0.75, which="minor", ls="--", lw=0.35)
+
+        # y軸ラベルの設定
+        _ax.set_ylabel(_column)
+    
     
     ## __init__
     df = df.copy()
+    
+    # プロットするカラムを決定。 plot_list == Noneのとき、全てのカラムを選択
     if plot_list is None:
         plot_list = df.columns
-    
-    if fig_save_name is None:
-        is_save_pdf = False
-    elif fig_save_name.split(".")[-1] == "pdf":
+    number = len(plot_list)
+
+    # pdf作成要否判断
+    if fig_save_name is not None and fig_save_name.split(".")[-1] == "pdf":
         is_save_pdf = True
         pdf = PdfPages(fig_save_name)
     else:
         is_save_pdf = False
+
+    # グラフ描画
+    if not is_save_pdf:
+        fig, ax = plt.subplots(number, 1, figsize=(graph_width, graph_height*number))
+        for idx, column in enumerate(plot_list):
+            _trend_vis(_column=column, _ax=ax[idx], _idx=idx)
+
+    else:
+        for idx, column in enumerate(plot_list):
+            fig, ax = plt.subplots(figsize=(graph_width, graph_height))
+            _trend_vis(_column=column, _ax=ax, _idx=idx)
+            plt.tight_layout()
+            pdf.savefig(fig)
     
-    number = len(plot_list)
-    fig, ax = plt.subplots(number, 1, figsize=(graph_width, graph_height*number))
-
-    ## plot()
-    for idx, column in enumerate(plot_list):
-        if colorbar_column is not None:
-            mappable = ax[idx].scatter(df.index, df[column], s=4, label=column,
-                                       c=df[colorbar_column], cmap="coolwarm")
-            cbar = fig.colorbar(mappable, ax = ax[idx])
-            cbar.set_label(colorbar_column)
-        else:
-            ax[idx].plot(df.index, df[column], color=cm.tab10.colors[idx%10], 
-                         label=column)
-            ax[idx].legend(loc=legend_loc)
-
-        # 垂線
-        for ver in ver_line_list:
-            ax[idx].axvline(x=ver, color='indianred')
-
-        # trend表示範囲の設定
-        ax[idx].set_xlim(x_min, x_max)
-
-        # x軸の設定
-        ax[idx].tick_params(axis="x", rotation=60)  # 要望があれば、rotationも変数に格納
-        if x_major_loc is not None:
-            if type(x_major_loc) == np.ndarray:
-                ax[idx].xaxis.set_major_locator(ticker.FixedLocator(x_major_loc))
-            else:
-                ax[idx].xaxis.set_major_locator(x_major_loc)
-                
-        if x_major_format is not None:
-            ax[idx].xaxis.set_major_formatter(x_major_format)
-        ax[idx].grid(alpha=0.75, linewidth=1.5)
-
-        if x_minor_loc is not None:
-            if type(x_minor_loc) == np.ndarray:
-                ax[idx].xaxis.set_minor_locator(ticker.FixedLocator(x_minor_loc))
-            else:
-                ax[idx].xaxis.set_minor_locator(x_minor_loc)
-            ax[idx].grid(alpha=0.75, which="minor", ls="--", lw=0.35)
-
-        # y軸ラベルの設定
-        ax[idx].set_ylabel(column)
-
-    plt.tight_layout()
     if is_save_pdf:
-        pdf.savefig(fig)
         pdf.close()
     elif fig_save_name is not None:
+        plt.tight_layout()
         plt.savefig(fig_save_name)
-    plt.show()
+    
